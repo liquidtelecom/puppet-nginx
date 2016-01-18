@@ -29,7 +29,7 @@ class nginx::package::debian(
 
   if $manage_repo {
     include '::apt'
-    Exec['apt_update'] -> Package['nginx']
+    Exec['apt_get_update'] -> Package['nginx']
 
     case $package_source {
       'nginx', 'nginx-stable': {
@@ -60,7 +60,7 @@ class nginx::package::debian(
 
         package { 'passenger':
           ensure  => 'present',
-          require => Exec['apt_update'],
+          require => Exec['apt_get_update'],
         }
 
         if $package_name != 'nginx-extras' {
