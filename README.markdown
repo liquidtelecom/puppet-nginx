@@ -1,3 +1,5 @@
+Modified to use example42 apt pacakges.  Ugh.  Don't use this :(
+
 # NGINX Module
 
 ## INSTALLING OR UPGRADING
