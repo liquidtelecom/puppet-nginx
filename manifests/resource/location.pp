@@ -11,6 +11,7 @@
 #     entry to include with
 #   [*location*]             - Specifies the URI associated with this location
 #     entry
+#   [*location_satisfy*]    - Allows access if all (all) or at least one (any) of the auth modules allow access.
 #   [*location_allow*]       - Array: Locations to allow connections from.
 #   [*location_deny*]        - Array: Locations to deny connections from.
 #   [*www_root*]             - Specifies the location on disk for files to be
@@ -156,6 +157,7 @@ define nginx::resource::location (
   $ssl                  = false,
   $ssl_only             = false,
   $location_alias       = undef,
+  $location_satisfy     = undef,
   $location_allow       = undef,
   $location_deny        = undef,
   $option               = undef,
@@ -239,6 +241,10 @@ define nginx::resource::location (
   if ($location_alias != undef) {
     validate_string($location_alias)
   }
+  if ($location_satisfy != undef) {
+    validate_re($location_satisfy, '^(any|all)$',
+    "${$location_satisfy} is not supported for location_satisfy. Allowed values are 'any' and 'all'.")
+  }
   if ($location_allow != undef) {
     validate_array($location_allow)
   }
@@ -290,7 +296,9 @@ define nginx::resource::location (
     validate_string($proxy_cache_use_stale)
   }
   if ($proxy_cache_valid != false) {
-    validate_string($proxy_cache_valid)
+    if !(is_array($proxy_cache_valid) or is_string($proxy_cache_valid)) {
+      fail('$proxy_cache_valid must be a string or an array or false.')
+    }
   }
   if ($proxy_method != undef) {
     validate_string($proxy_method)
@@ -379,7 +387,6 @@ define nginx::resource::location (
   $location_md5 = md5($location)
   if ($ssl_only != true) {
     concat::fragment { "${vhost_sanitized}-${priority}-${location_md5}":
-      ensure  => $ensure_real,
       target  => $config_file,
       content => join([
         template('nginx/vhost/location_header.erb'),
@@ -395,7 +402,6 @@ define nginx::resource::location (
     $ssl_priority = $priority + 300
 
     concat::fragment { "${vhost_sanitized}-${ssl_priority}-${location_md5}-ssl":
-      ensure  => $ensure_real,
       target  => $config_file,
       content => join([
         template('nginx/vhost/location_header.erb'),
